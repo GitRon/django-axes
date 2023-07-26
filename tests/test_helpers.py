@@ -3,6 +3,7 @@ from hashlib import sha256
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, HttpRequest
 from django.test import override_settings, RequestFactory
 
@@ -136,13 +137,29 @@ class ClientStringTestCase(AxesTestCase):
         self.assertEqual(expected, actual)
 
     @override_settings(AXES_VERBOSE=False)
-    def test_non_verbose_ip_only_client_details(self):
+    def test_non_verbose_ip_not_in_client_details(self):
         username = "test@example.com"
         ip_address = "127.0.0.1"
         user_agent = "Googlebot/2.1 (+http://www.googlebot.com/bot.html)"
         path_info = "/admin/"
 
-        expected = '{ip_address: "127.0.0.1", path_info: "/admin/"}'
+        expected = '{path_info: "/admin/"}'
+        actual = get_client_str(
+            username, ip_address, user_agent, path_info, self.request
+        )
+
+        self.assertEqual(expected, actual)
+
+    @override_settings(AXES_VERBOSE=False)
+    def test_non_verbose_user_in_database_id_logged_instead(self):
+        username = "test@example.com"
+        ip_address = "127.0.0.1"
+        user_agent = "Googlebot/2.1 (+http://www.googlebot.com/bot.html)"
+        path_info = "/admin/"
+
+        user = User.objects.create(username=username)
+
+        expected = '{user_id: "%s", path_info: "/admin/"}' % user.id
         actual = get_client_str(
             username, ip_address, user_agent, path_info, self.request
         )
@@ -206,7 +223,7 @@ class ClientStringTestCase(AxesTestCase):
         user_agent = "Googlebot/2.1 (+http://www.googlebot.com/bot.html)"
         path_info = "/admin/"
 
-        expected = '{username: "test@example.com", ip_address: "127.0.0.1", path_info: "/admin/"}'
+        expected = '{username: "test@example.com", path_info: "/admin/"}'
         actual = get_client_str(
             username, ip_address, user_agent, path_info, self.request
         )
@@ -238,7 +255,7 @@ class ClientStringTestCase(AxesTestCase):
         user_agent = "Googlebot/2.1 (+http://www.googlebot.com/bot.html)"
         path_info = "/admin/"
 
-        expected = '{ip_address: "127.0.0.1", user_agent: "Googlebot/2.1 (+http://www.googlebot.com/bot.html)", path_info: "/admin/"}'
+        expected = '{user_agent: "Googlebot/2.1 (+http://www.googlebot.com/bot.html)", path_info: "/admin/"}'
         actual = get_client_str(
             username, ip_address, user_agent, path_info, self.request
         )

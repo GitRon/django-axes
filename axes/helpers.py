@@ -6,6 +6,7 @@ from typing import Callable, Optional, Type, Union
 from urllib.parse import urlencode
 
 import ipware.ip
+from django.contrib.auth import get_user_model
 from django.core.cache import caches, BaseCache
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import render, redirect
@@ -210,6 +211,19 @@ def get_client_parameters(username: str, ip_address: str, user_agent: str) -> li
     return filter_query
 
 
+def get_client_id(username: str) -> Optional[int]:
+    """
+    Tries to fetch the user database ID via the "username" used for logging in.
+
+    :param username:    str    Username from request
+    :return:            int|None
+    """
+    User = get_user_model()
+    filter_params = {getattr(User, 'USERNAME_FIELD', 'username'): username}
+    possible_user = User.objects.filter(**filter_params).first()
+    return possible_user.id if possible_user else None
+
+
 def make_cache_key_list(filter_kwargs_list):
     cache_keys = []
     for filter_kwargs in filter_kwargs_list:
@@ -289,6 +303,15 @@ def get_client_str(
         client_dict = {}
         for client in client_list:
             client_dict.update(client)
+
+        # We don't want the IP address if we are not logging verbosely
+        client_dict.pop('ip_address', None)
+
+        # If the user is in our database, the "username" is sensitive, so we log only the user id instead
+        user_id = get_client_id(username=username)
+        if user_id:
+            client_dict['user_id'] = user_id
+            client_dict.pop('username', None)
 
     # Path info is always included as last component in the client string for traceability purposes
     if path_info and isinstance(path_info, (tuple, list)):
