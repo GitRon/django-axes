@@ -392,6 +392,7 @@ def get_client_str(
 
     # todo maybe put it in here?
     # todo ip-address per default als sensitive field + user-id-fetching als neue settings?
+    #  not working: if we activate username then *** will be saved in the db (correct?) but maybe IP would be fine?
     client_dict = cleanse_parameters(client_dict.copy())
     # Path info is always included as last component in the client string for traceability purposes
     if path_info and isinstance(path_info, (tuple, list)):
