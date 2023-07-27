@@ -5,9 +5,8 @@ from string import Template
 from typing import Callable, Optional, Type, Union, List
 from urllib.parse import urlencode
 
-import ipware.ip
 from django.contrib.auth import get_user_model
-from django.core.cache import caches, BaseCache
+from django.core.cache import BaseCache, caches
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.utils.module_loading import import_string
@@ -293,6 +292,7 @@ def get_client_id(username: str) -> Optional[int]:
     :param username:    str    Username from request
     :return:            int|None
     """
+    # todo write tests
     User = get_user_model()
     filter_params = {getattr(User, 'USERNAME_FIELD', 'username'): username}
     possible_user = User.objects.filter(**filter_params).first()
@@ -391,6 +391,7 @@ def get_client_str(
             client_dict.pop('username', None)
 
     # todo maybe put it in here?
+    # todo ip-address per default als sensitive field + user-id-fetching als neue settings?
     client_dict = cleanse_parameters(client_dict.copy())
     # Path info is always included as last component in the client string for traceability purposes
     if path_info and isinstance(path_info, (tuple, list)):
